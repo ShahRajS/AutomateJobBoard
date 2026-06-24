@@ -4,6 +4,11 @@
   "spreadsheet_name": "Agentic AI Entry Jobs SF",
   "search_location": "San Francisco, California",
   "max_pages_per_query": 2,
+  "priority_sources": [
+    "linkedin",
+    "glassdoor",
+    "bandana"
+  ],
   "search_queries": [
     "\"Agentic AI\" OR \"AI Agent\" OR \"LLM Agent\" OR \"Agentic AI Engineer\""
   ],

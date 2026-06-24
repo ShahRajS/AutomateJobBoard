@@ -482,6 +482,18 @@ def main():
                 logging.debug(f"FILTERED OUT: '{title}' at '{company}' - Reason: {reason}")
                 
     if new_jobs_to_add:
+        # Prioritize specified sources if configured
+        priority_sources = config.get("priority_sources", [])
+        if priority_sources:
+            def get_priority_score(job_row):
+                via_lower = job_row[4].lower()
+                for source in priority_sources:
+                    if source in via_lower:
+                        return 1
+                return 0
+            new_jobs_to_add.sort(key=get_priority_score, reverse=True)
+            logging.info("Sorted matching listings to prioritize LinkedIn, Glassdoor, and Bandana.")
+
         if not dry_run:
             logging.info(f"Inserting {len(new_jobs_to_add)} new jobs at the top of the spreadsheet...")
             try:

@@ -1,0 +1,58 @@
+name: Run Job Scraper
+
+on:
+  schedule:
+    # GitHub Actions cron runs in UTC time.
+    # SF Local Time (Pacific Time) conversions:
+    # 
+    # During Daylight Saving Time (PDT, UTC-7):
+    #   - 8:30 AM PDT -> 15:30 UTC (cron: '30 15 * * *')
+    #   - 2:00 PM PDT -> 21:00 UTC (cron: '0 21 * * *')
+    #   - 7:00 PM PDT -> 02:00 UTC next day (cron: '0 2 * * *')
+    #
+    # During Standard Time (PST, UTC-8):
+    #   - 8:30 AM PST -> 16:30 UTC
+    #   - 2:00 PM PST -> 22:00 UTC
+    #   - 7:00 PM PST -> 03:00 UTC next day
+    #
+    # Below schedule is optimized for PDT. You can adjust the hours by +/- 1 when DST changes.
+    - cron: '30 15 * * *'
+    - cron: '0 21 * * *'
+    - cron: '0 2 * * *'
+  
+  # Allow manual trigger of the scraper via the GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Write Google Credentials File
+        env:
+          GOOGLE_CREDS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+        run: |
+          echo "$GOOGLE_CREDS" > credentials.json
+
+      - name: Run Scraper
+        env:
+          SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
+          GOOGLE_APPLICATION_CREDENTIALS: credentials.json
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          USER_EMAIL: ${{ secrets.USER_EMAIL }}
+        run: |
+          python scraper.py

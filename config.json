@@ -1,0 +1,49 @@
+{
+  "spreadsheet_id": "YOUR_SPREADSHEET_ID_HERE",
+  "user_email": "YOUR_EMAIL_HERE@example.com",
+  "spreadsheet_name": "Agentic AI Entry Jobs SF",
+  "search_location": "San Francisco, California",
+  "max_pages_per_query": 2,
+  "search_queries": [
+    "\"Agentic AI\" OR \"AI Agent\" OR \"LLM Agent\" OR \"Agentic AI Engineer\""
+  ],
+  "experience_filter": {
+    "max_years": 2,
+    "allowed_titles": [
+      "junior",
+      "entry level",
+      "associate",
+      "intern",
+      "new grad",
+      "university grad",
+      "apprentice",
+      "l3",
+      "l4"
+    ],
+    "exclude_titles": [
+      "senior",
+      "sr.",
+      "principal",
+      "lead",
+      "staff",
+      "manager",
+      "director",
+      "vp",
+      "head of",
+      "architect"
+    ],
+    "exclude_description_keywords": [
+      "3+ years",
+      "4+ years",
+      "5+ years",
+      "6+ years",
+      "7+ years",
+      "8+ years",
+      "10+ years",
+      "senior experience",
+      "seasoned developer",
+      "lead a team",
+      "manage a team"
+    ]
+  }
+}

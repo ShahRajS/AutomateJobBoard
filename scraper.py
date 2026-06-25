@@ -319,35 +319,107 @@ def get_or_create_sheet(gc, config, config_path):
         
     return ws
 
-def get_existing_job_ids(ws):
+def get_job_signature(title, company):
+    # Normalize: lowercase and strip non-alphanumeric characters
+    clean_title = re.sub(r'[^a-z0-9]', '', title.lower())
+    clean_company = re.sub(r'[^a-z0-9]', '', company.lower())
+    return f"{clean_title}_{clean_company}"
+
+def get_existing_jobs_metadata(ws):
     try:
         all_rows = ws.get_all_values()
         if len(all_rows) <= 1:
-            return set()
+            return set(), set()
         
         headers = all_rows[0]
+        title_idx = -1
+        company_idx = -1
         job_id_idx = -1
-        for idx, h in enumerate(headers):
-            if "job id" in h.lower():
-                job_id_idx = idx
-                break
         
-        if job_id_idx == -1:
-            job_id_idx = 6 if len(headers) > 6 else -1
-            
-        if job_id_idx == -1:
-            return set()
-            
+        for idx, h in enumerate(headers):
+            h_lower = h.lower()
+            if "job title" in h_lower:
+                title_idx = idx
+            elif "company" in h_lower:
+                company_idx = idx
+            elif "job id" in h_lower:
+                job_id_idx = idx
+                
+        # Fallbacks if headers differ
+        if title_idx == -1: title_idx = 1
+        if company_idx == -1: company_idx = 2
+        if job_id_idx == -1: job_id_idx = 6
+        
         job_ids = set()
+        signatures = set()
+        
         for row in all_rows[1:]:
+            # Extract job ID
             if len(row) > job_id_idx:
                 job_id = row[job_id_idx].strip()
                 if job_id:
                     job_ids.add(job_id)
-        return job_ids
+            
+            # Extract signature
+            if len(row) > max(title_idx, company_idx):
+                title = row[title_idx].strip()
+                company = row[company_idx].strip()
+                if title and company:
+                    signatures.add(get_job_signature(title, company))
+                    
+        return job_ids, signatures
     except Exception as e:
-        logging.error(f"Error reading existing job IDs: {e}")
-        return set()
+        logging.error(f"Error reading existing job metadata: {e}")
+        return set(), set()
+
+def cleanup_old_jobs(sh, ws):
+    try:
+        all_rows = ws.get_all_values()
+        if len(all_rows) <= 1:
+            return
+            
+        pt_tz = pytz.timezone('America/Los_Angeles')
+        now_pt = datetime.now(pt_tz)
+        
+        rows_to_delete = [] # list of 0-based indices for API
+        
+        for idx, row in enumerate(all_rows[1:], 1):
+            if not row or not row[0]:
+                continue
+                
+            date_str = row[0].strip()
+            try:
+                # Parse date (format: 2026-06-24 01:23 PM)
+                job_date = datetime.strptime(date_str, '%Y-%m-%d %I:%M %p')
+                # Make it timezone-aware in PT
+                job_date = pt_tz.localize(job_date)
+                
+                # Check if it was added more than 14 days ago
+                age = now_pt - job_date
+                if age.days > 14:
+                    rows_to_delete.append(idx)
+            except Exception as parse_error:
+                logging.warning(f"Could not parse date '{date_str}' in row {idx}: {parse_error}")
+                
+        if rows_to_delete:
+            logging.info(f"Found {len(rows_to_delete)} jobs added more than 14 days ago. Deleting them...")
+            # Sort in descending order to prevent index shifting during deletion
+            requests = []
+            for r_idx in sorted(rows_to_delete, reverse=True):
+                requests.append({
+                    "deleteDimension": {
+                        "range": {
+                            "sheetId": ws.id,
+                            "dimension": "ROWS",
+                            "startIndex": r_idx,
+                            "endIndex": r_idx + 1
+                        }
+                    }
+                })
+            sh.batch_update({"requests": requests})
+            logging.info("Old jobs cleaned up successfully.")
+    except Exception as cleanup_error:
+        logging.error(f"Error during cleanup of old jobs: {cleanup_error}")
 
 def search_serpapi_jobs(query, location, api_key, max_pages=2):
     logging.info(f"Querying SerpAPI for: '{query}' in '{location}'...")
@@ -416,12 +488,16 @@ def main():
         gc = authenticate_gspread(credentials_path)
         ws = get_or_create_sheet(gc, config, config_path)
         
-        # Read existing Job IDs to prevent duplicates
-        existing_ids = get_existing_job_ids(ws)
-        logging.info(f"Found {len(existing_ids)} existing job listings in spreadsheet.")
+        # Clean up jobs added more than 14 days ago
+        cleanup_old_jobs(ws.spreadsheet, ws)
+        
+        # Read existing Job IDs and signatures to prevent duplicates
+        existing_ids, existing_signatures = get_existing_jobs_metadata(ws)
+        logging.info(f"Found {len(existing_ids)} existing job IDs and {len(existing_signatures)} signatures in spreadsheet.")
     else:
         logging.info("Dry-run mode activated. Querying SerpAPI and filtering, but skipping Google Sheets write.")
         existing_ids = set()
+        existing_signatures = set()
     
     # Execute searches
     new_jobs_to_add = []
@@ -441,18 +517,22 @@ def main():
             
         for job in jobs:
             job_id = job.get("job_id")
+            title = job.get("title", "")
+            company = job.get("company_name", "")
+            
             if not job_id:
                 # If SerpAPI doesn't return job_id, construct one from title + company
-                job_id = f"{job.get('title','')}_{job.get('company_name','')}".replace(" ", "_")
+                job_id = f"{title}_{company}".replace(" ", "_")
                 
-            if job_id in existing_ids or job_id in seen_in_run:
+            sig = get_job_signature(title, company)
+            
+            if job_id in existing_ids or sig in existing_signatures or job_id in seen_in_run or sig in seen_in_run:
                 # Duplicate, skip
                 continue
                 
             seen_in_run.add(job_id)
+            seen_in_run.add(sig)
             
-            title = job.get("title", "")
-            company = job.get("company_name", "")
             location = job.get("location", "")
             via = job.get("via", "")
             description = job.get("description", "")

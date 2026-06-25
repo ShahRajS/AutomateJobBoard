@@ -15,9 +15,8 @@ grep -v "scraper.py" mycron > mycron_temp
 # Append the new cron schedules
 # macOS runs cron in local system time.
 echo "# Agentic AI Job Scraper Cron Schedule" >> mycron_temp
-echo "30 8 * * * $DIR/venv/bin/python $SCRIPTPATH >> $DIR/cron_output.log 2>&1" >> mycron_temp
-echo "0 14 * * * $DIR/venv/bin/python $SCRIPTPATH >> $DIR/cron_output.log 2>&1" >> mycron_temp
-echo "0 19 * * * $DIR/venv/bin/python $SCRIPTPATH >> $DIR/cron_output.log 2>&1" >> mycron_temp
+echo "0 6 * * * $DIR/venv/bin/python $SCRIPTPATH >> $DIR/cron_output.log 2>&1" >> mycron_temp
+echo "0 17 * * * $DIR/venv/bin/python $SCRIPTPATH >> $DIR/cron_output.log 2>&1" >> mycron_temp
 
 # Load new crontab
 crontab mycron_temp
@@ -25,10 +24,9 @@ rm mycron mycron_temp
 
 echo "=========================================================================="
 echo "Successfully configured macOS cron jobs!"
-echo "The scraper will run 3x a day at:"
-echo "  - 8:30 AM"
-echo "  - 2:00 PM"
-echo "  - 7:00 PM"
+echo "The scraper will run 2x a day at:"
+echo "  - 6:00 AM"
+echo "  - 5:00 PM"
 echo "(Cron executes using system local time, currently Pacific Time)"
 echo ""
 echo "Verify configuration with: crontab -l"

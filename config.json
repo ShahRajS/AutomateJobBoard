@@ -3,14 +3,16 @@
   "user_email": "YOUR_EMAIL_HERE@example.com",
   "spreadsheet_name": "Agentic AI Entry Jobs SF",
   "search_location": "San Francisco, California",
-  "max_pages_per_query": 2,
+  "max_pages_per_query": 1,
   "priority_sources": [
     "linkedin",
     "glassdoor",
     "bandana"
   ],
   "search_queries": [
-    "\"Agentic AI\" OR \"AI Agent\" OR \"LLM Agent\" OR \"Agentic AI Engineer\""
+    "\"Agentic AI\" OR \"AI Agent\" OR \"LLM Agent\" OR \"Agentic AI Engineer\" linkedin",
+    "\"Agentic AI\" OR \"AI Agent\" OR \"LLM Agent\" OR \"Agentic AI Engineer\" glassdoor",
+    "\"Agentic AI\" OR \"AI Agent\" OR \"LLM Agent\" OR \"Agentic AI Engineer\" bandana"
   ],
   "experience_filter": {
     "max_years": 2,

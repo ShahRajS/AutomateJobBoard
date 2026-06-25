@@ -75,9 +75,9 @@ Logs will print to the console and be written to `scraper.log`.
 
 ---
 
-## Scheduling (3x Daily)
+## Scheduling (2x Daily)
 
-We use macOS `cron` to run the job 3x a day at **8:30 AM**, **2:00 PM**, and **7:00 PM PT**.
+We use macOS `cron` to run the job 2x a day at **6:00 AM** and **5:00 PM PT**.
 
 ### Automate Schedule Setup
 Run the helper setup script to automatically configure your crontab:
@@ -94,9 +94,8 @@ crontab -l
 You should see:
 ```text
 # Agentic AI Job Scraper Cron Schedule
-30 8 * * * /path/to/job-scraper-gsheet/venv/bin/python /path/to/job-scraper-gsheet/scraper.py >> /path/to/job-scraper-gsheet/cron_output.log 2>&1
-0 14 * * * /path/to/job-scraper-gsheet/venv/bin/python /path/to/job-scraper-gsheet/scraper.py >> /path/to/job-scraper-gsheet/cron_output.log 2>&1
-0 19 * * * /path/to/job-scraper-gsheet/venv/bin/python /path/to/job-scraper-gsheet/scraper.py >> /path/to/job-scraper-gsheet/cron_output.log 2>&1
+0 6 * * * /path/to/job-scraper-gsheet/venv/bin/python /path/to/job-scraper-gsheet/scraper.py >> /path/to/job-scraper-gsheet/cron_output.log 2>&1
+0 17 * * * /path/to/job-scraper-gsheet/venv/bin/python /path/to/job-scraper-gsheet/scraper.py >> /path/to/job-scraper-gsheet/cron_output.log 2>&1
 ```
 
 To remove or edit the schedules manually, you can run:

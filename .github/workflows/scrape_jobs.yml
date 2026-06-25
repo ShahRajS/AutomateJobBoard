@@ -6,19 +6,16 @@ on:
     # SF Local Time (Pacific Time) conversions:
     # 
     # During Daylight Saving Time (PDT, UTC-7):
-    #   - 8:30 AM PDT -> 15:30 UTC (cron: '30 15 * * *')
-    #   - 2:00 PM PDT -> 21:00 UTC (cron: '0 21 * * *')
-    #   - 7:00 PM PDT -> 02:00 UTC next day (cron: '0 2 * * *')
+    #   - 6:00 AM PDT -> 13:00 UTC (cron: '0 13 * * *')
+    #   - 5:00 PM PDT -> 00:00 UTC next day (cron: '0 0 * * *')
     #
     # During Standard Time (PST, UTC-8):
-    #   - 8:30 AM PST -> 16:30 UTC
-    #   - 2:00 PM PST -> 22:00 UTC
-    #   - 7:00 PM PST -> 03:00 UTC next day
+    #   - 6:00 AM PST -> 14:00 UTC
+    #   - 5:00 PM PST -> 01:00 UTC next day
     #
     # Below schedule is optimized for PDT. You can adjust the hours by +/- 1 when DST changes.
-    - cron: '30 15 * * *'
-    - cron: '0 21 * * *'
-    - cron: '0 2 * * *'
+    - cron: '0 13 * * *'
+    - cron: '0 0 * * *'
   
   # Allow manual trigger of the scraper via the GitHub Actions tab
   workflow_dispatch:

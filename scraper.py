@@ -468,6 +468,13 @@ def main():
                     logging.debug(f"FILTERED OUT: '{title}' from '{via}' - not in exclusive sources list")
                     continue
             
+            # Exclusively keep jobs in the SF Bay Area or Remote/Anywhere
+            bay_area_keywords = ["san francisco", "sf", "oakland", "san jose", "mountain view", "palo alto", "menlo park", "redwood city", "san mateo", "sunnyvale", "santa clara", "cupertino", "berkeley", "fremont", "ca", "california", "bay area", "remote", "anywhere"]
+            loc_lower = location.lower()
+            if not any(kw in loc_lower for kw in bay_area_keywords):
+                logging.debug(f"FILTERED OUT: '{title}' in '{location}' - not in SF Bay Area or Remote")
+                continue
+            
             # Apply entry-level filter
             is_entry, reason = is_entry_level(title, description, config)
             

@@ -134,6 +134,20 @@ def authenticate_gspread(credentials_path):
         logging.error(f"Failed to authenticate with Google: {e}")
         sys.exit(1)
 
+def apply_status_validation(ws):
+    try:
+        from gspread.utils import ValidationConditionType
+        ws.add_validation(
+            'I2:I5000',
+            ValidationConditionType.one_of_list,
+            ['N/A', 'Applied', 'Interviewing', 'Accepted', 'Rejected'],
+            showCustomUi=True,
+            strict=True
+        )
+        logging.info("Status dropdown validation applied successfully to Column I.")
+    except Exception as validation_error:
+        logging.warning(f"Could not apply Status dropdown validation: {validation_error}")
+
 def get_or_create_sheet(gc, config, config_path):
     spreadsheet_id = os.getenv("SPREADSHEET_ID") or config.get("spreadsheet_id")
     spreadsheet_name = os.getenv("SPREADSHEET_NAME") or config.get("spreadsheet_name", "Agentic AI Entry Jobs SF")
@@ -252,6 +266,7 @@ def get_or_create_sheet(gc, config, config_path):
                 ]
             })
             logging.info("Header styling and freeze row applied successfully.")
+            apply_status_validation(ws)
         except Exception as style_error:
             logging.warning(f"Could not apply advanced header styling: {style_error}")
     else:
@@ -298,22 +313,9 @@ def get_or_create_sheet(gc, config, config_path):
                     ws.update(range_name, cells_to_update)
                     
                 logging.info("'Status' column inserted and populated successfully.")
+                apply_status_validation(ws)
             except Exception as insert_error:
                 logging.error(f"Failed to migrate spreadsheet to add 'Status' column: {insert_error}")
-
-    # Apply data validation for the Status column (Column I, range I2:I5000)
-    try:
-        from gspread.utils import ValidationConditionType
-        ws.add_validation(
-            'I2:I5000',
-            ValidationConditionType.one_of_list,
-            ['N/A', 'Applied', 'Interviewing', 'Accepted', 'Rejected'],
-            showCustomUi=True,
-            strict=True
-        )
-        logging.info("Status dropdown validation applied successfully to Column I.")
-    except Exception as validation_error:
-        logging.warning(f"Could not apply Status dropdown validation: {validation_error}")
         
     return ws
 

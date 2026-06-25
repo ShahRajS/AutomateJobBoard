@@ -37,20 +37,26 @@ def load_config():
 def parse_years_of_experience(text):
     text_lower = text.lower()
     # Match patterns like "3+ years", "3-5 years", "3 to 5 years", "3 yrs", "3+ yrs"
-    pattern = r'(\d+)\s*(?:\+|-|to)?\s*(?:\d+)?\s*(?:years?|yrs?)\b'
+    pattern = r'\b(\d+)\s*(?:\+|-|to)?\s*(?:\d+)?\s*(?:years?|yrs?)\b'
     matches = re.finditer(pattern, text_lower)
     years = []
     for m in matches:
-        start = max(0, m.start() - 35)
-        end = min(len(text_lower), m.end() + 35)
-        context = text_lower[start:end]
+        digits = re.findall(r'\d+', m.group(0))
+        if not digits:
+            continue
+            
+        min_years = int(digits[0])
         
-        # Check if context suggests this refers to experience requirements
-        exp_indicators = ['exp', 'work', 'background', 'software', 'engineer', 'industry', 'coding', 'dev', 'min', 'req', 'least', 'relevant', 'role', 'job', 'position', 'candidate']
-        if any(ind in context for ind in exp_indicators):
-            digits = re.findall(r'\d+', m.group(0))
-            if digits:
-                years.append(int(digits[0]))
+        # We only check details for matches that could exceed the limit (>= 3 years)
+        if min_years >= 3:
+            start = max(0, m.start() - 100)
+            end = min(len(text_lower), m.end() + 100)
+            context = text_lower[start:end]
+            
+            # Check context for general experience indicators
+            exp_indicators = ['experience', 'exp', 'work', 'background', 'software', 'engineer', 'industry', 'coding', 'dev', 'min', 'req', 'least', 'relevant', 'role', 'job', 'position', 'candidate', 'history', 'professional']
+            if any(ind in context for ind in exp_indicators):
+                years.append(min_years)
     return years
 
 def is_entry_level(title, description, config):
@@ -449,6 +455,19 @@ def main():
             via = job.get("via", "")
             description = job.get("description", "")
             
+            # Exclusively keep jobs from priority/exclusive sources if configured
+            priority_sources = config.get("priority_sources", [])
+            if priority_sources:
+                via_lower = via.lower()
+                is_valid_source = False
+                for source in priority_sources:
+                    if source in via_lower:
+                        is_valid_source = True
+                        break
+                if not is_valid_source:
+                    logging.debug(f"FILTERED OUT: '{title}' from '{via}' - not in exclusive sources list")
+                    continue
+            
             # Apply entry-level filter
             is_entry, reason = is_entry_level(title, description, config)
             
@@ -482,18 +501,6 @@ def main():
                 logging.debug(f"FILTERED OUT: '{title}' at '{company}' - Reason: {reason}")
                 
     if new_jobs_to_add:
-        # Prioritize specified sources if configured
-        priority_sources = config.get("priority_sources", [])
-        if priority_sources:
-            def get_priority_score(job_row):
-                via_lower = job_row[4].lower()
-                for source in priority_sources:
-                    if source in via_lower:
-                        return 1
-                return 0
-            new_jobs_to_add.sort(key=get_priority_score, reverse=True)
-            logging.info("Sorted matching listings to prioritize LinkedIn, Glassdoor, and Bandana.")
-
         if not dry_run:
             logging.info(f"Inserting {len(new_jobs_to_add)} new jobs at the top of the spreadsheet...")
             try:
